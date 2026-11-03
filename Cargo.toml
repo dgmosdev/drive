@@ -1,0 +1,30 @@
+[package]
+name = "dgmos-drive"
+version = "1.0.0"
+edition = "2024"
+description = "DGMOS hesabınıza sürükle-bırak ile dosya yükleyen masaüstü uygulaması"
+authors = ["DG Regtech Co."]
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+dirs = "7.0.0"
+eframe = "0.37.0"
+futures-util = "0.3.34"
+hex = "0.4.3"
+hmac = "0.13.0"
+image = { version = "0.25", default-features = false, features = ["png"] }
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+mime_guess = "2.0.5"
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "stream", "http2"] }
+rfd = "0.17.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "fs", "sync", "io-util"] }
+tokio-util = "0.7.20"
+window-vibrancy = "0.8"
+
+[profile.release]
+lto = "thin"
+strip = true
