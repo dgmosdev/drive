@@ -23,7 +23,7 @@ fn asset_name() -> &'static str {
     if cfg!(target_os = "macos") {
         "DGMOS-Drive-macOS.dmg"
     } else if cfg!(target_os = "windows") {
-        "DGMOS-Drive-Windows.zip"
+        "DGMOS-Drive-Setup.exe"
     } else {
         "DGMOS-Drive-Linux-x86_64.tar.gz"
     }

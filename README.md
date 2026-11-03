@@ -31,14 +31,18 @@ git tag v1.0.0 && git push origin v1.0.0
 
 | Platform | Dosya |
 |---|---|
-| macOS (Apple Silicon + Intel) | `DGMOS-Drive-macOS.dmg` |
-| Windows | `DGMOS-Drive-Windows.zip` (`DGMOS Drive.exe`) |
+| macOS (Apple Silicon + Intel) | `DGMOS-Drive-macOS.dmg` (uygulamayı Uygulamalar kısayoluna sürükleyerek kurulur) |
+| Windows | `DGMOS-Drive-Setup.exe` (kurulum; `scripts/windows-installer.iss`) |
+| Windows (taşınabilir) | `DGMOS-Drive-Windows.zip` (1.0.0–1.0.1'in güncelleme bandı bunu indirir; kaldırılmamalı) |
 | Linux x86_64 | `DGMOS-Drive-Linux-x86_64.tar.gz` (binary, `.desktop`, ikon) |
+
+Windows kurulumu kullanıcı bazındadır (`%LOCALAPPDATA%\Programs\DGMOS Drive`): yönetici
+şifresi istemez, Başlat menüsü kısayolu ve kaldırıcı ekler, yeni sürüm eskisinin üzerine kurulur.
 
 Kalıcı indirme bağlantıları (her zaman son yayınlanmış sürüm):
 
 - https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-macOS.dmg
-- https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-Windows.zip
+- https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-Setup.exe
 - https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-Linux-x86_64.tar.gz
 
 Uygulama açılışta `releases/latest`'e bakar; daha yeni bir sürüm varsa üstte

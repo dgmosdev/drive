@@ -67,10 +67,7 @@ jobs:
             --sign "$SIGN_IDENTITY" "target/release/bundle/DGMOS Drive.app"
           codesign --verify --strict --verbose=2 "target/release/bundle/DGMOS Drive.app"
       - name: Create .dmg
-        run: |
-          mkdir -p dist
-          hdiutil create -volname "DGMOS Drive" -srcfolder "target/release/bundle/DGMOS Drive.app" \
-            -ov -format UDZO "dist/DGMOS-Drive-macOS.dmg"
+        run: scripts/make-dmg.sh "target/release/bundle/DGMOS Drive.app" dist/DGMOS-Drive-macOS.dmg
       - name: Sign, notarize and staple .dmg
         if: env.SIGN_IDENTITY != ''
         run: |
@@ -103,6 +100,18 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist, "pkg/DGMOS Drive" | Out-Null
           Copy-Item target/release/dgmos-drive.exe "pkg/DGMOS Drive/DGMOS Drive.exe"
           Compress-Archive -Path "pkg/DGMOS Drive" -DestinationPath dist/DGMOS-Drive-Windows.zip
+      # 1.0.0/1.0.1 güncelleme bandı .zip'i indirir; o yüzden .zip de yayınlanmaya devam eder.
+      - name: Build installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress | Out-Null
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
+            "/DAppVersion=$version" `
+            "/DSourceExe=$PWD\target\release\dgmos-drive.exe" `
+            "/DOutputDir=$PWD\dist" `
+            scripts\windows-installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
           name: windows

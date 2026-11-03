@@ -82,4 +82,6 @@ icon.alpha_composite(badge)
 
 icon.save(f"{out}/icon-1024.png", optimize=True)
 icon.resize((256, 256), Image.LANCZOS).save(f"{out}/app-icon.png", optimize=True)
+# Windows kurulum ve kısayol ikonu (scripts/windows-installer.iss)
+icon.save(f"{out}/app-icon.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 print("ok")
