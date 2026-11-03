@@ -34,6 +34,7 @@ pub enum Event {
     Failed { row: usize, error: ApiError },
     BatchFinished,
     AuthChecked(Result<(), ApiError>),
+    UpdateAvailable(crate::update::Release),
 }
 
 pub struct BatchOptions {

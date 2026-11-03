@@ -35,6 +35,16 @@ git tag v1.0.0 && git push origin v1.0.0
 | Windows | `DGMOS-Drive-Windows.zip` (`DGMOS Drive.exe`) |
 | Linux x86_64 | `DGMOS-Drive-Linux-x86_64.tar.gz` (binary, `.desktop`, ikon) |
 
+Kalıcı indirme bağlantıları (her zaman son yayınlanmış sürüm):
+
+- https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-macOS.dmg
+- https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-Windows.zip
+- https://github.com/dgmosdev/drive/releases/latest/download/DGMOS-Drive-Linux-x86_64.tar.gz
+
+Uygulama açılışta `releases/latest`'e bakar; daha yeni bir sürüm varsa üstte
+**Yeni sürüm hazır** bandı çıkar ve **İndir** o platformun paketini tarayıcıda açar.
+Taslak sürümler kullanıcılara duyurulmaz, yalnızca yayınlananlar.
+
 Taslağı kontrol edip GitHub'dan yayınlayın. Actions sekmesinden elle çalıştırıldığında sürüm
 açmaz, paketleri yalnızca artifact olarak üretir. macOS paketi henüz Developer ID ile imzalı
 değildir; ilk açılışta sağ tık → **Aç** gerekir.

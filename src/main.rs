@@ -4,6 +4,7 @@ mod api;
 mod config;
 mod log;
 mod theme;
+mod update;
 mod upload;
 
 use std::path::PathBuf;
@@ -42,7 +43,7 @@ fn main() -> eframe::Result<()> {
         options,
         Box::new(|cc| {
             let logos = theme::install(&cc.egui_ctx);
-            Ok(Box::new(DriveApp::new(logos)))
+            Ok(Box::new(DriveApp::new(&cc.egui_ctx, logos)))
         }),
     )
 }
@@ -93,10 +94,12 @@ struct DriveApp {
     rows: Vec<Row>,
     active_batches: usize,
     session_expired: bool,
+    /// Yeni sürüm bulunduysa; kullanıcı "Sonra" derse bu oturumda gizlenir.
+    update: Option<update::Release>,
 }
 
 impl DriveApp {
-    fn new(logos: Logos) -> Self {
+    fn new(ctx: &egui::Context, logos: Logos) -> Self {
         let (tx, rx) = channel();
         let settings = Settings::load();
         let connected = config::load_secret(&settings.access_key).is_some();
@@ -105,12 +108,23 @@ impl DriveApp {
             base_url: settings.base_url.clone(),
             ..Default::default()
         };
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("tokio runtime");
+        {
+            let tx = tx.clone();
+            let ctx = ctx.clone();
+            runtime.spawn(async move {
+                if let Some(release) = update::check().await {
+                    let _ = tx.send(Event::UpdateAvailable(release));
+                    ctx.request_repaint();
+                }
+            });
+        }
         Self {
             logos,
-            runtime: tokio::runtime::Builder::new_multi_thread()
-                .enable_all()
-                .build()
-                .expect("tokio runtime"),
+            runtime,
             tx,
             rx,
             settings,
@@ -123,6 +137,7 @@ impl DriveApp {
             rows: Vec::new(),
             active_batches: 0,
             session_expired: false,
+            update: None,
         }
     }
 
@@ -223,6 +238,7 @@ impl DriveApp {
                 }
                 Event::BatchFinished => self.active_batches = self.active_batches.saturating_sub(1),
                 Event::AuthChecked(result) => self.finish_connect(result),
+                Event::UpdateAvailable(release) => self.update = Some(release),
             }
         }
     }
@@ -332,6 +348,12 @@ impl DriveApp {
                     if menu_item(ui, p, "Hesap bağlantısını kes", DANGER) {
                         self.disconnect();
                     }
+                    ui.add_space(6.0);
+                    ui.label(
+                        RichText::new(concat!("Sürüm ", env!("CARGO_PKG_VERSION")))
+                            .font(theme::medium(12.0))
+                            .color(p.gray_500),
+                    );
                     ui.add_space(4.0);
                 });
             ui.add_space(4.0);
@@ -456,6 +478,39 @@ impl DriveApp {
     }
 
     // ------------------------------------------------------------ ana ekran
+
+    /// Yeni sürüm bandı: indirme bağlantısını tarayıcıda açar, yüklemeyi kullanıcı yapar.
+    fn update_banner(&mut self, ui: &mut Ui, p: &Palette) {
+        let Some(release) = &self.update else {
+            return;
+        };
+        let width = ui.available_width();
+        let (mut download, mut later) = (false, false);
+        notice(ui, p, width, |ui| {
+            ui.label(
+                RichText::new(format!("Yeni sürüm hazır: {}", release.version))
+                    .font(theme::bold(14.0))
+                    .color(PRIMARY),
+            );
+            ui.label(
+                RichText::new("İndirip kurduktan sonra uygulamayı yeniden açın.")
+                    .font(theme::medium(13.0))
+                    .color(p.gray_700),
+            );
+            ui.add_space(10.0);
+            ui.horizontal(|ui| {
+                download = theme::btn_primary(ui, "İndir", None, true).clicked();
+                later = theme::btn_light_primary(ui, p, "Sonra", None).clicked();
+            });
+        });
+        if download {
+            open_in_browser(&release.download_url);
+        }
+        if later {
+            self.update = None;
+        }
+        ui.add_space(12.0);
+    }
 
     fn main_ui(&mut self, ui: &mut Ui, p: &Palette, hovering_files: bool) {
         let width = ui.available_width();
@@ -944,13 +999,16 @@ impl eframe::App for DriveApp {
             UiBuilder::new()
                 .max_rect(body)
                 .layout(Layout::top_down(Align::Min)),
-            |ui| match self.screen {
+            |ui| {
+                self.update_banner(ui, &p);
+                match self.screen {
                 Screen::Connect => {
                     egui::ScrollArea::vertical()
                         .auto_shrink([false; 2])
                         .show(ui, |ui| self.connect_ui(ui, &p));
                 }
                 Screen::Main => self.main_ui(ui, &p, hovering),
+                }
             },
         );
 
