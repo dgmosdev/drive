@@ -19,6 +19,26 @@ scripts/bundle-macos.sh
 Çıktı `target/release/bundle/DGMOS Drive.app`. Paket ad-hoc imzalıdır; başka Mac'lere
 dağıtmak için Developer ID ile imzalanıp notarize edilmesi gerekir.
 
+## Sürüm çıkarma
+
+`Cargo.toml`'daki `version`'ı artırıp aynı sürümle etiket atın:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+`.github/workflows/release.yml` üç platformu derler ve GitHub Releases'ta **taslak** sürüm açar:
+
+| Platform | Dosya |
+|---|---|
+| macOS (Apple Silicon + Intel) | `DGMOS-Drive-macOS.dmg` |
+| Windows | `DGMOS-Drive-Windows.zip` (`DGMOS Drive.exe`) |
+| Linux x86_64 | `DGMOS-Drive-Linux-x86_64.tar.gz` (binary, `.desktop`, ikon) |
+
+Taslağı kontrol edip GitHub'dan yayınlayın. Actions sekmesinden elle çalıştırıldığında sürüm
+açmaz, paketleri yalnızca artifact olarak üretir. macOS paketi henüz Developer ID ile imzalı
+değildir; ilk açılışta sağ tık → **Aç** gerekir.
+
 Uygulama ikonu `scripts/make_icon.py` ile frontend'deki dünya logosundan üretilir:
 
 ```bash
@@ -31,6 +51,8 @@ python3 -I scripts/make_icon.py ../frontend/public assets
 2. İzinlere dosya yükleme rotalarını ekleyin:
    - `/api/modules/generate-presigned-upload-url-multi`
    - `/api/modules/confirm-file-upload-multi`
+   - `/api/modules/generate-presigned-upload-url` (tek dosya)
+   - `/api/modules/confirm-file-upload` (tek dosya)
 3. IP kısıtlaması koyduysanız uygulamayı kullanacağınız makinenin IP'sini ekleyin.
 4. Uygulamayı ilk açtığınızda bağlanma ekranı gelir: erişim anahtarını ve gizli anahtarı girip
    **Bağlan**'a basın. Anahtar boş bir istekle doğrulanır, doğrulanmadan kaydedilmez.
@@ -68,6 +90,9 @@ Frontend'deki Dropzone ile aynı üç adımlı akış:
 2. Dosyalar S3'e doğrudan `PUT` edilir (`x-amz-tagging: status=temp`, en fazla N eşzamanlı)
 3. `confirm-file-upload-multi`: başarıyla yüklenen dosyalar onaylanır; moderasyonun
    reddettikleri (`rejected_files`) dosya bazında hata olarak gösterilir
+
+Tek dosya bırakıldığında Dropzone'daki gibi tekil rotalar kullanılır:
+`generate-presigned-upload-url` (`channel_code: "s3"`) ve `confirm-file-upload`.
 
 Her API isteği `X-Access-Key`, `X-Timestamp` ve `X-Signature` başlıklarıyla gönderilir.
 İmza, Secret Key ile `METHOD\nPATH\nTIMESTAMP\nBODY` metninin HMAC-SHA256 değeridir.

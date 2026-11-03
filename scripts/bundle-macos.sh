@@ -12,12 +12,16 @@ VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' "$ROOT/Cargo.toml" | head -1)"
 OUT="$ROOT/target/release/bundle"
 APP="$OUT/$APP_NAME.app"
 
-cargo build --release --manifest-path "$ROOT/Cargo.toml"
+# BIN_PATH verilirse (CI'daki universal binary) derleme atlanır.
+if [[ -z "${BIN_PATH:-}" ]]; then
+  cargo build --release --manifest-path "$ROOT/Cargo.toml"
+  BIN_PATH="$ROOT/target/release/$BIN"
+fi
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # Çalıştırılabilir dosya uygulama adını taşır; Aktivite Monitörü ve Dock bu adı gösterir.
-cp "$ROOT/target/release/$BIN" "$APP/Contents/MacOS/$APP_NAME"
+cp "$BIN_PATH" "$APP/Contents/MacOS/$APP_NAME"
 
 # .icns: assets/icon-1024.png'den tüm standart boyutlar
 ICONSET="$(mktemp -d)/AppIcon.iconset"

@@ -1,0 +1,120 @@
+# v* etiketi atıldığında macOS, Windows ve Linux paketlerini derleyip
+# GitHub Releases'a taslak olarak yükler. Elle çalıştırıldığında yalnızca
+# paketleri artifact olarak üretir (sürüm oluşturmaz).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --release
+      - name: Build (Apple Silicon + Intel)
+        run: |
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
+          lipo -create -output target/dgmos-drive-universal \
+            target/aarch64-apple-darwin/release/dgmos-drive \
+            target/x86_64-apple-darwin/release/dgmos-drive
+      - name: Bundle .app + .dmg
+        run: |
+          BIN_PATH=target/dgmos-drive-universal scripts/bundle-macos.sh
+          mkdir -p dist
+          hdiutil create -volname "DGMOS Drive" -srcfolder "target/release/bundle/DGMOS Drive.app" \
+            -ov -format UDZO "dist/DGMOS-Drive-macOS.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --release
+      - name: Build
+        run: cargo build --release
+      - name: Package .zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist, "pkg/DGMOS Drive" | Out-Null
+          Copy-Item target/release/dgmos-drive.exe "pkg/DGMOS Drive/DGMOS Drive.exe"
+          Compress-Archive -Path "pkg/DGMOS Drive" -DestinationPath dist/DGMOS-Drive-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*
+
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libdbus-1-dev libgtk-3-dev \
+            libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libwayland-dev libgl1-mesa-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --release
+      - name: Build
+        run: cargo build --release
+      - name: Package .tar.gz
+        run: |
+          PKG=pkg/dgmos-drive
+          mkdir -p dist "$PKG"
+          cp target/release/dgmos-drive "$PKG/"
+          cp assets/icon-1024.png "$PKG/dgmos-drive.png"
+          cat > "$PKG/dgmos-drive.desktop" <<'DESKTOP'
+          [Desktop Entry]
+          Type=Application
+          Name=DGMOS Drive
+          Comment=DGMOS hesabınıza sürükle-bırak ile dosya yükleyin
+          Exec=dgmos-drive
+          Icon=dgmos-drive
+          Categories=Utility;Network;
+          DESKTOP
+          sed -i 's/^ *//' "$PKG/dgmos-drive.desktop"
+          tar -czf dist/DGMOS-Drive-Linux-x86_64.tar.gz -C pkg dgmos-drive
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" --title "DGMOS Drive $GITHUB_REF_NAME" \
+            --draft --generate-notes
