@@ -46,8 +46,21 @@ Uygulama açılışta `releases/latest`'e bakar; daha yeni bir sürüm varsa üs
 Taslak sürümler kullanıcılara duyurulmaz, yalnızca yayınlananlar.
 
 Taslağı kontrol edip GitHub'dan yayınlayın. Actions sekmesinden elle çalıştırıldığında sürüm
-açmaz, paketleri yalnızca artifact olarak üretir. macOS paketi henüz Developer ID ile imzalı
-değildir; ilk açılışta sağ tık → **Aç** gerekir.
+açmaz, paketleri yalnızca artifact olarak üretir.
+
+### macOS imzalama ve notarization
+
+Repo secret'ları (Settings → Secrets and variables → Actions) tanımlıysa macOS paketi
+Developer ID ile imzalanır (hardened runtime), Apple'a notarize edilir ve onay `.dmg`'ye
+eklenir. Secret'lar yoksa paket imzasız üretilir ve ilk açılışta sağ tık → **Aç** gerekir.
+
+| Secret | İçerik |
+|---|---|
+| `MACOS_CERT_P12` | Developer ID Application sertifikası, `.p12` (`base64 -i cert.p12 \| pbcopy`) |
+| `MACOS_CERT_PASSWORD` | `.p12` dışa aktarılırken verilen şifre |
+| `ASC_KEY_P8` | App Store Connect API anahtarı, `.p8` (`base64 -i AuthKey_XXX.p8 \| pbcopy`) |
+| `ASC_KEY_ID` | API anahtarının Key ID'si |
+| `ASC_ISSUER_ID` | App Store Connect Issuer ID |
 
 Uygulama ikonu `scripts/make_icon.py` ile frontend'deki dünya logosundan üretilir:
 
