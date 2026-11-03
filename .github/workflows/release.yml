@@ -53,9 +53,10 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/cert.p12"
+          # Yalnızca DG Regtech takımının (9758HUCSGY) sertifikası kabul edilir.
           IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" \
-            | grep -o '"Developer ID Application: [^"]*"' | head -1 | tr -d '"')"
-          test -n "$IDENTITY" || { echo "Developer ID Application sertifikası bulunamadı"; exit 1; }
+            | grep -o '"Developer ID Application: [^"]*(9758HUCSGY)"' | head -1 | tr -d '"')"
+          test -n "$IDENTITY" || { echo "DG Regtech (9758HUCSGY) Developer ID Application sertifikası bulunamadı"; exit 1; }
           echo "SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
       - name: Bundle .app
         run: BIN_PATH=target/dgmos-drive-universal scripts/bundle-macos.sh

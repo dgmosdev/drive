@@ -51,7 +51,7 @@ açmaz, paketleri yalnızca artifact olarak üretir.
 ### macOS imzalama ve notarization
 
 Repo secret'ları (Settings → Secrets and variables → Actions) tanımlıysa macOS paketi
-Developer ID ile imzalanır (hardened runtime), Apple'a notarize edilir ve onay `.dmg`'ye
+DG Regtech takımının (Team ID `9758HUCSGY`) Developer ID'si ile imzalanır (hardened runtime), Apple'a notarize edilir ve onay `.dmg`'ye
 eklenir. Secret'lar yoksa paket imzasız üretilir ve ilk açılışta sağ tık → **Aç** gerekir.
 
 | Secret | İçerik |
